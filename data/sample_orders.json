@@ -1,0 +1,156 @@
+[
+  {
+    "customer": "C001",
+    "products": [
+      "Laptop",
+      "Mouse",
+      "Keyboard"
+    ]
+  },
+  {
+    "customer": "C002",
+    "products": [
+      "Laptop",
+      "Mouse"
+    ]
+  },
+  {
+    "customer": "C003",
+    "products": [
+      "Laptop",
+      "Keyboard",
+      "Monitor"
+    ]
+  },
+  {
+    "customer": "C004",
+    "products": [
+      "Laptop",
+      "Mouse",
+      "Laptop Bag"
+    ]
+  },
+  {
+    "customer": "C005",
+    "products": [
+      "Phone",
+      "Phone Case",
+      "Charger"
+    ]
+  },
+  {
+    "customer": "C006",
+    "products": [
+      "Phone",
+      "Charger",
+      "Earbuds"
+    ]
+  },
+  {
+    "customer": "C007",
+    "products": [
+      "Monitor",
+      "HDMI Cable",
+      "Keyboard",
+      "Mouse"
+    ]
+  },
+  {
+    "customer": "C008",
+    "products": [
+      "Laptop",
+      "Mouse",
+      "Mouse",
+      "Monitor"
+    ]
+  },
+  {
+    "customer": "C009",
+    "products": [
+      "Earbuds",
+      "Phone Case"
+    ]
+  },
+  {
+    "customer": "C010",
+    "products": [
+      "Keyboard",
+      "Mouse",
+      "Mouse Pad"
+    ]
+  },
+  {
+    "customer": "C001",
+    "products": [
+      "Monitor",
+      "HDMI Cable"
+    ]
+  },
+  {
+    "customer": "C011",
+    "products": [
+      "Tablet",
+      "Tablet Cover",
+      "Charger"
+    ]
+  },
+  {
+    "customer": "C012",
+    "products": [
+      "Laptop",
+      "Laptop Bag",
+      "Mouse"
+    ]
+  },
+  {
+    "customer": "C013",
+    "products": [
+      "Phone",
+      "Earbuds",
+      "Charger"
+    ]
+  },
+  {
+    "customer": "C014",
+    "products": [
+      "Webcam",
+      "Headset",
+      "Laptop"
+    ]
+  },
+  {
+    "customer": "C015",
+    "products": [
+      "Mouse",
+      "Mouse Pad"
+    ]
+  },
+  {
+    "customer": "C016",
+    "products": [
+      "Keyboard",
+      "Monitor",
+      "Mouse"
+    ]
+  },
+  {
+    "customer": "C003",
+    "products": [
+      "Mouse",
+      "Headset"
+    ]
+  },
+  {
+    "customer": "C017",
+    "products": [
+      "Phone",
+      "Phone Case"
+    ]
+  },
+  {
+    "customer": "C018",
+    "products": [
+      "Charger"
+    ]
+  }
+]
