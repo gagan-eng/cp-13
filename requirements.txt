@@ -1,0 +1,2 @@
+# BuyNext uses only the Python standard library (Python 3.8+).
+# Optional: pytest   (tests also run with: python -m unittest)
