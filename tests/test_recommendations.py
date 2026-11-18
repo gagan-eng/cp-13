@@ -144,5 +144,51 @@ class TestEvaluation(unittest.TestCase):
         self.assertLessEqual(hits, trials)
 
 
+class TestIncremental(unittest.TestCase):
+    def test_remove_order_restores_counts(self):
+        cp = CoPurchaseEngine(ORDERS)
+        extra = {"customer": "X", "products": ["Laptop", "Mouse", "Webcam"]}
+        cp.add_order(extra)
+        self.assertEqual(cp.count("Laptop", "Mouse"), 3)
+        cp.remove_order(extra)
+        fresh = CoPurchaseEngine(ORDERS)
+        self.assertEqual(cp.pair_counts, fresh.pair_counts)
+        self.assertEqual(dict(cp.product_counts), dict(fresh.product_counts))
+        self.assertNotIn("Webcam", cp.product_counts)  # zeroed entries removed
+        self.assertEqual(cp.top_with("Webcam"), [])
+
+    def test_refresh_is_incremental_but_equivalent(self):
+        om, eng = make()
+        om.add_order("C4", ["Mouse", "Monitor"])
+        eng.refresh()
+        eng.refresh()  # second call must not double count
+        fresh = CoPurchaseEngine(om.orders)
+        self.assertEqual(eng.cp.pair_counts, fresh.pair_counts)
+        self.assertEqual(dict(eng.cp.product_counts), dict(fresh.product_counts))
+
+    def test_refresh_after_load_rebuilds(self):
+        om, eng = make()
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, "o.json")
+            OrderManager([{"customer": "Z", "products": ["A", "B"]}]).save_json(path)
+            om.load_json(path)
+        eng.refresh()
+        self.assertEqual(eng.cp.pair_counts, {("A", "B"): 1})
+
+    def test_evaluation_leaves_counts_unchanged(self):
+        _, eng = make()
+        before = dict(eng.cp.pair_counts)
+        hit_rate_at_n(eng)
+        self.assertEqual(eng.cp.pair_counts, before)
+
+    def test_indexes_after_reload_and_case(self):
+        om, _ = make()
+        self.assertEqual(om.history("C002"), {"Laptop", "Mouse"})
+        self.assertEqual(om.buyers("Laptop"), {"C001", "C002", "C003"})
+        om.add_order("C002", ["Webcam"])
+        self.assertIn("Webcam", om.history("C002"))
+        self.assertEqual(om.find_product("WEBCAM"), "Webcam")
+
+
 if __name__ == "__main__":
     unittest.main()

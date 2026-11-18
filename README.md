@@ -26,6 +26,15 @@ python -m unittest discover -s tests -v
 - **Explanations:** every recommendation shows its supporting order counts.
 - **Stretch:** similar-customer search (Jaccard similarity) and a hit-rate@3 evaluation.
 
+## Performance notes
+- `OrderManager` keeps indexes (customer -> products, product -> buyers), so
+  lookups never scan all orders.
+- `CoPurchaseEngine.add_order/remove_order` update counts incrementally;
+  `refresh()` only folds in orders added since the last sync.
+- Evaluation holds out one order at a time via remove/add instead of rebuilding
+  all counts (3,000 orders: ~41 s -> ~0.3 s). Similar-customer search only
+  compares customers who share a product (50 lookups: ~6 s -> ~0.04 s).
+
 ## Structure
 ```
 BuyNext/

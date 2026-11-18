@@ -13,13 +13,30 @@ def unique_products(products):
     return sorted(set(clean_products(products)))
 
 
+def _keep_first(mapping, canonical):
+    """Case-insensitive key -> canonical spelling; on a clash the
+    alphabetically first spelling wins (same rule as a sorted scan)."""
+    key = canonical.lower()
+    if key not in mapping or canonical < mapping[key]:
+        mapping[key] = canonical
+
+
 class OrderManager:
     """Holds orders: [{"customer": "C001", "products": [...]}, ...]."""
 
     def __init__(self, orders=None):
-        self.orders = []
+        self._reset()
         for o in orders or []:
             self.add_order(o.get("customer"), o.get("products", []))
+
+    def _reset(self):
+        """Clear orders and the lookup indexes built from them."""
+        self.orders = []
+        self.epoch = getattr(self, "epoch", 0) + 1  # bumps when orders are replaced
+        self._history = {}   # customer -> set of products they bought
+        self._buyers = {}    # product  -> set of customers who bought it
+        self._cust_lower = {}  # lower-case id -> canonical customer id
+        self._prod_lower = {}  # lower-case name -> canonical product name
 
     # ---- mutation -------------------------------------------------------
     def add_order(self, customer, products):
@@ -29,52 +46,52 @@ class OrderManager:
         products = clean_products(products or [])
         if not products:
             return False
-        self.orders.append({"customer": customer.strip(), "products": products})
+        customer = customer.strip()
+        self.orders.append({"customer": customer, "products": products})
+        self._index(customer, products)
         return True
 
-    # ---- queries --------------------------------------------------------
+    def _index(self, customer, products):
+        """Update lookup indexes for one new order (O(products in order))."""
+        self._history.setdefault(customer, set()).update(products)
+        _keep_first(self._cust_lower, customer)
+        for p in products:
+            self._buyers.setdefault(p, set()).add(customer)
+            _keep_first(self._prod_lower, p)
+
+    # ---- queries (all index-backed; no scan over orders) ----------------
     def customers(self):
-        return sorted({o["customer"] for o in self.orders})
+        return sorted(self._history)
 
     def all_products(self):
-        items = set()
-        for o in self.orders:
-            items.update(o["products"])
-        return sorted(items)
+        return sorted(self._buyers)
 
     def find_customer(self, name):
         """Case-insensitive customer lookup. Returns canonical id or None."""
         if not name:
             return None
-        key = name.strip().lower()
-        for c in self.customers():
-            if c.lower() == key:
-                return c
-        return None
+        return self._cust_lower.get(name.strip().lower())
 
     def find_product(self, name):
         """Case-insensitive product lookup. Returns canonical name or None."""
         if not name:
             return None
-        key = name.strip().lower()
-        for p in self.all_products():
-            if p.lower() == key:
-                return p
-        return None
+        return self._prod_lower.get(name.strip().lower())
 
     def history(self, customer):
-        """Set of all distinct products a customer has purchased."""
-        items = set()
-        for o in self.orders:
-            if o["customer"] == customer:
-                items.update(o["products"])
-        return items
+        """Set of all distinct products a customer has purchased.
+        Treat the result as read-only."""
+        return self._history.get(customer, set())
+
+    def buyers(self, product):
+        """Set of customers who bought `product`. Treat as read-only."""
+        return self._buyers.get(product, set())
 
     # ---- persistence ----------------------------------------------------
     def load_json(self, path):
         with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
-        self.orders = []
+        self._reset()
         for o in data:
             self.add_order(o.get("customer"), o.get("products", []))
         return len(self.orders)

@@ -1,4 +1,6 @@
 """Recommendation logic: product-based, customer-based, fallback, similarity."""
+import heapq
+
 from .copurchase_engine import CoPurchaseEngine
 
 
@@ -9,11 +11,23 @@ def _orders_word(n):
 class RecommendationEngine:
     def __init__(self, order_manager):
         self.om = order_manager
-        self.cp = CoPurchaseEngine(order_manager.orders)
+        self._rebuild()
+
+    def _rebuild(self):
+        self.cp = CoPurchaseEngine(self.om.orders)
+        self._synced = len(self.om.orders)
+        self._epoch = self.om.epoch
 
     def refresh(self):
-        """Rebuild counts after orders change."""
-        self.cp = CoPurchaseEngine(self.om.orders)
+        """Bring counts up to date after orders change. Orders appended since
+        the last sync are folded in incrementally; if the order list was
+        replaced (e.g. load_json) everything is rebuilt."""
+        if self._epoch != self.om.epoch or len(self.om.orders) < self._synced:
+            self._rebuild()
+            return
+        for order in self.om.orders[self._synced:]:
+            self.cp.add_order(order)
+        self._synced = len(self.om.orders)
 
     # ---- 3. product-based ----------------------------------------------
     def recommend_for_product(self, product, n=3):
@@ -40,7 +54,8 @@ class RecommendationEngine:
 
     def _rank_basket(self, basket, cp, n):
         scores = self._basket_scores(basket, cp)
-        ranked = sorted(scores.items(), key=lambda kv: (-kv[1][0], kv[0]))[:n]
+        ranked = heapq.nsmallest(n, scores.items(),
+                                 key=lambda kv: (-kv[1][0], kv[0]))
         results = []
         for product, (score, src) in ranked:
             parts = ", ".join(
@@ -83,9 +98,12 @@ class RecommendationEngine:
         if not mine:
             return None
         best = None
-        for other in self.om.customers():
-            if other == customer:
-                continue
+        # only customers sharing at least one product can have similarity > 0
+        candidates = set()
+        for product in mine:
+            candidates |= self.om.buyers(product)
+        candidates.discard(customer)
+        for other in candidates:
             theirs = self.om.history(other)
             shared = mine & theirs
             if not shared:
@@ -99,6 +117,10 @@ class RecommendationEngine:
         return best[1], sorted(best[2]), best[3]
 
     # ---- evaluation helper ----------------------------------------------
+    def recommend_for_basket(self, basket, n=3):
+        """Recommend for an ad-hoc basket using the current counts."""
+        return self._rank_basket(set(basket), self.cp, n)
+
     def recommend_for_basket_with(self, basket, orders, n=3):
         """Recommend for a basket using counts built from `orders`."""
         cp = CoPurchaseEngine(orders)
